@@ -166,6 +166,15 @@ function export_settings {
 }
 
 ################################################################################
+## Rotating backup files
+## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
+function rotate_backups {
+    echo "Copying settings to SETTING_BACKUP"
+    cd "$BACKUP_DIR"
+    #..
+}
+
+################################################################################
 ## Main
 
 # Preparation
@@ -182,6 +191,9 @@ export_extensions
 export_settings
 
 toggle_read_only
+
+# Clean Up
+rotate_backups
 
 ## End main
 ################################################################################
