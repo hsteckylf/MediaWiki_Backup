@@ -159,10 +159,10 @@ function export_extensions {
 ################################################################################
 ## Export the settings
 function export_settings {
-    SETTING_BACKUP=$BACKUP_PREFIX"-LocalSettings.php"
-    echo "Copying settings to SETTING_BACKUP"
+    SETTINGS_BACKUP=$BACKUP_PREFIX"-LocalSettings.php"
+    echo "Copying settings to $SETTINGS_BACKUP"
     cd "$INSTALL_DIR"
-    cp LocalSettings.php "SETTING_BACKUP"
+    cp LocalSettings.php "$SETTINGS_BACKUP"
 }
 
 ################################################################################
@@ -190,9 +190,8 @@ export_images
 export_extensions
 export_settings
 
-toggle_read_only
-
 # Clean Up
+toggle_read_only
 rotate_backups
 
 ## End main
