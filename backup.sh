@@ -148,6 +148,24 @@ function export_images {
 }
 
 ################################################################################
+## Export the extensions directory
+function export_extensions {
+    EXT_BACKUP=$BACKUP_PREFIX"-extensions.tar.gz"
+    echo "Compressing extensions to $EXT_BACKUP"
+    cd "$INSTALL_DIR"
+    tar --exclude-vcs -zcf "$EXT_BACKUP" extensions
+}
+
+################################################################################
+## Export the settings
+function export_settings {
+    SETTING_BACKUP=$BACKUP_PREFIX"-LocalSettings.php"
+    echo "Copying settings to SETTING_BACKUP"
+    cd "$INSTALL_DIR"
+    cp LocalSettings.php "SETTING_BACKUP"
+}
+
+################################################################################
 ## Main
 
 # Preparation
@@ -160,6 +178,8 @@ BACKUP_PREFIX=$BACKUP_DIR/$(date +%Y-%m-%d)
 export_sql
 export_xml
 export_images
+export_extensions
+export_settings
 
 toggle_read_only
 
