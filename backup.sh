@@ -171,7 +171,18 @@ function export_settings {
 function rotate_backups {
     echo "Copying settings to SETTING_BACKUP"
     cd "$BACKUP_DIR"
-    #..
+    
+    # Create dated folder for backup storage
+    if [ ! -d $BACKUP_DIR/$BACKUP_PREFIX ]; then
+        mkdir --parents $BACKUP_DIR/$BACKUP_PREFIX;
+        if [ ! -d $BACKUP_DIR/$BACKUP_PREFIX ]; then
+            echo -n "Backup directory $BACKUP_DIR/$BACKUP_PREFIX does not exist" 1>&2
+            echo " and could not be created" 1>&2
+            exit 1;
+        fi
+    fi
+    
+    # Move backups to backup folder
 }
 
 ################################################################################
