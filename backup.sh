@@ -219,28 +219,36 @@ function condense_backup {
 ## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
 function store_backup {
     echo "Copying backup to daily_backups folder"
+    
     # Daily backup
     cp $BACKUP_FILE $DAILY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
     
     # Weekly backup (Sunday)
-    cp $BACKUP_FILE $WEEKLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+    if [[$(date +%w) -eq 0 ]]; then # today's day of the week is 0 = Sunday
+        cp $BACKUP_FILE $WEEKLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+    fi
     
     # Monthly backup (EOM)
-    cp $BACKUP_FILE $MONTHLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
-
+    if [[$(date +%d) -gt $(date +%d -d "1 day"`) ]]; then # today's date is greater than tomorrow's date
+        cp $BACKUP_FILE $MONTHLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+    fi
 }
 
 ################################################################################
 ## Rotating backup files
 ## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
 function rotate_backups {
-    echo "Deleting old and temporary backups"
+    echo "Deleting temporary and old backups"
+    
     # Delete daily backups older than seven days
     find $DAILY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +7 -delete
-    # Delete weekly backups older than 32 days
+    
+    # Delete weekly backups older than 32 days (1 month)
     find $WEEKLY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +32 -delete
-    # Delete monthly backups older than 92 days
+    
+    # Delete monthly backups older than 92 days (3 months)
     find $MONTHLY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +92 -delete
+    
     # Delete all files in the root backup folder
     find $BACKUP_DIR/*.gz -maxdepth 1 -type f -delete
 }
