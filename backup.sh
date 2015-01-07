@@ -52,6 +52,16 @@ function get_options {
     BACKUP_DIR=$(cd $BACKUP_DIR; pwd -P)
     echo "Backing up to $BACKUP_DIR"
 
+    # Check backup folders exist
+    if [ ! -d $BACKUP_DIR"/daily_backups" ]; then
+        mkdir --parents $BACKUP_DIR/$BACKUP_PREFIX;
+        if [ ! -d $BACKUP_DIR/$BACKUP_PREFIX ]; then
+            echo -n "Backup directory $BACKUP_DIR/$BACKUP_PREFIX does not exist" 1>&2
+            echo " and could not be created" 1>&2
+            exit 1;
+        fi
+    fi
+
 }
 
 ################################################################################
@@ -159,28 +169,27 @@ function export_extensions {
 ################################################################################
 ## Export the settings
 function export_settings {
-    SETTINGS_BACKUP=$BACKUP_PREFIX"-LocalSettings.php"
-    echo "Copying settings to $SETTINGS_BACKUP"
+    SETTINGS_BACKUP=$BACKUP_PREFIX"-LocalSettings.tar.gz"
+    echo "Compressing settings files to $SETTINGS_BACKUP"
     cd "$INSTALL_DIR"
-    cp LocalSettings.php "$SETTINGS_BACKUP"
+    tar --exclude-vcs -zcf "$SETTINGS_BACKUP" LocalSettings*
+}
+
+################################################################################
+## Condense the backup files into a single file
+function condense_backups {
+    BACKUP_FILE=$BACKUP_PREFIX"-Backup.tar.gz"
+    echo "Compressing all backup files to $BACKUP_FILE"
+    cd "$BACKUP_DIR"
+    tar --exclude-vcs -zcf "$BACKUP_FILE" *.gz
 }
 
 ################################################################################
 ## Rotating backup files
 ## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
 function rotate_backups {
-    echo "Copying settings to SETTING_BACKUP"
-    cd "$BACKUP_DIR"
-    
-    # Create dated folder for backup storage
-    if [ ! -d $BACKUP_DIR/$BACKUP_PREFIX ]; then
-        mkdir --parents $BACKUP_DIR/$BACKUP_PREFIX;
-        if [ ! -d $BACKUP_DIR/$BACKUP_PREFIX ]; then
-            echo -n "Backup directory $BACKUP_DIR/$BACKUP_PREFIX does not exist" 1>&2
-            echo " and could not be created" 1>&2
-            exit 1;
-        fi
-    fi
+    echo "Deleting old and temporary backups"
+    find $DAILY_BACKUP_DIR
     
     # Move backups to backup folder
 }
@@ -193,13 +202,23 @@ get_options $@
 get_localsettings_vars
 toggle_read_only
 
+# Set backup folder paths
+DAILY_BACKUP_DIR=$BACKUP_DIR"/daily_backups"
+WEEKLY_BACKUP_DIR=$BACKUP_DIR"/weekly_backups"
+MONTHLY_BACKUP_DIR=$BACKUP_DIR"/monthly_backups"
+
 # Exports
-BACKUP_PREFIX=$BACKUP_DIR/$(date +%Y-%m-%d)
+BACKUP_DATE=$(date +%Y-%m-%d)
+BACKUP_PREFIX=$BACKUP_DIR/$BACKUP_DATE
 export_sql
 export_xml
 export_images
 export_extensions
 export_settings
+condense_backups
+
+# Copy exports to backup folder(s)
+
 
 # Clean Up
 toggle_read_only
