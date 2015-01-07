@@ -229,7 +229,7 @@ function store_backup {
     fi
     
     # Monthly backup (EOM)
-    if [[$(date +%d) -gt $(date +%d -d "1 day"`) ]]; then # today's date is greater than tomorrow's date
+    if [[$(date +%d) -gt $(date +%d -d "1 day") ]]; then # today's date is greater than tomorrow's date
         cp $BACKUP_FILE $MONTHLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
     fi
 }
