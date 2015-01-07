@@ -5,6 +5,8 @@
 # Copyright Sam Wilson 2013 CC-BY-SA
 # http://samwilson.id.au/public/MediaWiki
 #
+# Updates by Jonathan Issler 2015
+#
 
 
 ################################################################################
@@ -54,9 +56,25 @@ function get_options {
 
     # Check backup folders exist
     if [ ! -d $BACKUP_DIR"/daily_backups" ]; then
-        mkdir --parents $BACKUP_DIR/$BACKUP_PREFIX;
-        if [ ! -d $BACKUP_DIR/$BACKUP_PREFIX ]; then
-            echo -n "Backup directory $BACKUP_DIR/$BACKUP_PREFIX does not exist" 1>&2
+        mkdir --parents $BACKUP_DIR"/daily_backups";
+        if [ ! -d $BACKUP_DIR"/daily_backups" ]; then
+            echo -n "Backup directory $BACKUP_DIR/daily_backups does not exist" 1>&2
+            echo " and could not be created" 1>&2
+            exit 1;
+        fi
+    fi
+    if [ ! -d $BACKUP_DIR"/weekly_backups" ]; then
+        mkdir --parents $BACKUP_DIR"/weekly_backups";
+        if [ ! -d $BACKUP_DIR"/weekly_backups" ]; then
+            echo -n "Backup directory $BACKUP_DIR/weekly_backups does not exist" 1>&2
+            echo " and could not be created" 1>&2
+            exit 1;
+        fi
+    fi
+    if [ ! -d $BACKUP_DIR"/monthly_backups" ]; then
+        mkdir --parents $BACKUP_DIR"/monthly_backups";
+        if [ ! -d $BACKUP_DIR"/monthly_backups" ]; then
+            echo -n "Backup directory $BACKUP_DIR/monthly_backups does not exist" 1>&2
             echo " and could not be created" 1>&2
             exit 1;
         fi
@@ -113,6 +131,18 @@ function toggle_read_only {
         sed -i "s/$MSG//ig" "$LOCALSETTINGS"
 
     fi
+}
+
+################################################################################
+## Set program constants
+function set_constants {
+    DAILY_BACKUP_DIR=$BACKUP_DIR"/daily_backups"
+    WEEKLY_BACKUP_DIR=$BACKUP_DIR"/weekly_backups"
+    MONTHLY_BACKUP_DIR=$BACKUP_DIR"/monthly_backups"
+    BACKUP_DATE=$(date +%Y-%m-%d)
+    BACKUP_PREFIX=$BACKUP_DIR/$BACKUP_DATE
+
+    echo "Constants set"
 }
 
 ################################################################################
@@ -177,11 +207,27 @@ function export_settings {
 
 ################################################################################
 ## Condense the backup files into a single file
-function condense_backups {
+function condense_backup {
     BACKUP_FILE=$BACKUP_PREFIX"-Backup.tar.gz"
-    echo "Compressing all backup files to $BACKUP_FILE"
+    echo "Condensing all backup files to $BACKUP_FILE"
     cd "$BACKUP_DIR"
     tar --exclude-vcs -zcf "$BACKUP_FILE" *.gz
+}
+
+################################################################################
+## Store backup files
+## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
+function store_backup {
+    echo "Copying backup to daily_backups folder"
+    # Daily backup
+    cp $BACKUP_FILE $DAILY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+    
+    # Weekly backup (Sunday)
+    cp $BACKUP_FILE $WEEKLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+    
+    # Monthly backup (EOM)
+    cp $BACKUP_FILE $MONTHLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+
 }
 
 ################################################################################
@@ -189,9 +235,14 @@ function condense_backups {
 ## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
 function rotate_backups {
     echo "Deleting old and temporary backups"
-    find $DAILY_BACKUP_DIR
-    
-    # Move backups to backup folder
+    # Delete daily backups older than seven days
+    find $DAILY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +7 -delete
+    # Delete weekly backups older than 32 days
+    find $WEEKLY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +32 -delete
+    # Delete monthly backups older than 92 days
+    find $MONTHLY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +92 -delete
+    # Delete all files in the root backup folder
+    find $BACKUP_DIR/*.gz -maxdepth 1 -type f -delete
 }
 
 ################################################################################
@@ -200,28 +251,20 @@ function rotate_backups {
 # Preparation
 get_options $@
 get_localsettings_vars
+set_constants
 toggle_read_only
 
-# Set backup folder paths
-DAILY_BACKUP_DIR=$BACKUP_DIR"/daily_backups"
-WEEKLY_BACKUP_DIR=$BACKUP_DIR"/weekly_backups"
-MONTHLY_BACKUP_DIR=$BACKUP_DIR"/monthly_backups"
-
 # Exports
-BACKUP_DATE=$(date +%Y-%m-%d)
-BACKUP_PREFIX=$BACKUP_DIR/$BACKUP_DATE
 export_sql
 export_xml
 export_images
 export_extensions
 export_settings
-condense_backups
-
-# Copy exports to backup folder(s)
-
 
 # Clean Up
 toggle_read_only
+condense_backup
+store_backup
 rotate_backups
 
 ## End main
