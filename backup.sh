@@ -108,7 +108,7 @@ function get_localsettings_vars {
 ## Add $wgReadOnly to LocalSettings.php
 ## Kudos to http://www.mediawiki.org/wiki/User:Megam0rf/WikiBackup
 function toggle_read_only {
-    local MSG="\$wgReadOnly = 'Backup in progress.';"
+    local MSG="\$wgReadOnly = 'Backup in progress. This typically takes around five minutes.';"
     local LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
     # If already read-only
@@ -257,7 +257,7 @@ function rotate_backups {
     find $MONTHLY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +92 -delete
     find $MONTHLY_BACKUP_DIR/*images.tar.gz -maxdepth 1 -type f -mtime +31 -delete
     
-    # Delete all files in the root backup folder
+    # Delete all temp files in the root backup folder
     find $BACKUP_DIR/*.gz -maxdepth 1 -type f -delete
     find $BACKUP_DIR/*.tmp -maxdepth 1 -type f -delete
 }
