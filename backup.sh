@@ -28,37 +28,37 @@ function get_options {
 
     ## Check WIKI_WEB_DIR
     if [ -z $INSTALL_DIR ]; then
-        echo "Please specify the wiki directory with -w" 1>&2
+        echo "$(date +%T %Z): Please specify the wiki directory with -w" 1>&2
         usage; exit 1;
     fi
     if [ ! -f $INSTALL_DIR/LocalSettings.php ]; then
-        echo "No LocalSettings.php found in $INSTALL_DIR" 1>&2
+        echo "$(date +%T %Z): No LocalSettings.php found in $INSTALL_DIR" 1>&2
         exit 1;
     fi
     INSTALL_DIR=$(cd $INSTALL_DIR; pwd -P)
-    echo "Backing up wiki installed in $INSTALL_DIR"
+    echo "$(date +%T %Z): Backing up wiki installed in $INSTALL_DIR"
 
     ## Check BKP_DIR
     if [ -z $BACKUP_DIR ]; then
-        echo "Please provide a backup directory with -d" 1>&2
+        echo "$(date +%T %Z): Please provide a backup directory with -d" 1>&2
         usage; exit 1;
     fi
     if [ ! -d $BACKUP_DIR ]; then
         mkdir --parents $BACKUP_DIR;
         if [ ! -d $BACKUP_DIR ]; then
-            echo -n "Backup directory $BACKUP_DIR does not exist" 1>&2
+            echo -n "$(date +%T %Z): Backup directory $BACKUP_DIR does not exist" 1>&2
             echo " and could not be created" 1>&2
             exit 1;
         fi
     fi
     BACKUP_DIR=$(cd $BACKUP_DIR; pwd -P)
-    echo "Backing up to $BACKUP_DIR"
+    echo "$(date +%T %Z): Backing up to $BACKUP_DIR"
 
     # Check backup folders exist
     if [ ! -d $BACKUP_DIR"/daily_backups" ]; then
         mkdir --parents $BACKUP_DIR"/daily_backups";
         if [ ! -d $BACKUP_DIR"/daily_backups" ]; then
-            echo -n "Backup directory $BACKUP_DIR/daily_backups does not exist" 1>&2
+            echo -n "$(date +%T %Z): Backup directory $BACKUP_DIR/daily_backups does not exist" 1>&2
             echo " and could not be created" 1>&2
             exit 1;
         fi
@@ -66,7 +66,7 @@ function get_options {
     if [ ! -d $BACKUP_DIR"/weekly_backups" ]; then
         mkdir --parents $BACKUP_DIR"/weekly_backups";
         if [ ! -d $BACKUP_DIR"/weekly_backups" ]; then
-            echo -n "Backup directory $BACKUP_DIR/weekly_backups does not exist" 1>&2
+            echo -n "$(date +%T %Z): Backup directory $BACKUP_DIR/weekly_backups does not exist" 1>&2
             echo " and could not be created" 1>&2
             exit 1;
         fi
@@ -74,7 +74,7 @@ function get_options {
     if [ ! -d $BACKUP_DIR"/monthly_backups" ]; then
         mkdir --parents $BACKUP_DIR"/monthly_backups";
         if [ ! -d $BACKUP_DIR"/monthly_backups" ]; then
-            echo -n "Backup directory $BACKUP_DIR/monthly_backups does not exist" 1>&2
+            echo -n "$(date +%T %Z): Backup directory $BACKUP_DIR/monthly_backups does not exist" 1>&2
             echo " and could not be created" 1>&2
             exit 1;
         fi
@@ -91,7 +91,7 @@ function get_localsettings_vars {
     DB_NAME=`grep '^\$wgDBname' $LOCALSETTINGS  | cut -d\" -f2`
     DB_USER=`grep '^\$wgDBuser' $LOCALSETTINGS  | cut -d\" -f2`
     DB_PASS=`grep '^\$wgDBpassword' $LOCALSETTINGS  | cut -d\" -f2`
-    echo "Logging in as $DB_USER to $DB_HOST to backup $DB_NAME"
+    echo "$(date +%T %Z): Logging in as $DB_USER to $DB_HOST to backup $DB_NAME"
 
     # Try to extract default character set from LocalSettings.php
     # but default to binary
@@ -101,7 +101,7 @@ function get_localsettings_vars {
         CHARSET="binary"
     fi
 
-    echo "Character set in use: $CHARSET"
+    echo "$(date +%T %Z): Character set in use: $CHARSET"
 }
 
 ################################################################################
@@ -115,7 +115,7 @@ function toggle_read_only {
     grep "$MSG" "$LOCALSETTINGS" > /dev/null
     if [ $? -ne 0 ]; then
 
-        echo "Entering read-only mode"
+        echo "$(date +%T %Z): Entering read-only mode"
         grep "?>" "$LOCALSETTINGS" > /dev/null
         if [ $? -eq 0 ];
         then
@@ -127,7 +127,7 @@ function toggle_read_only {
     # Remove read-only message
     else
 
-        echo "Returning to write mode"
+        echo "$(date +%T %Z): Returning to write mode"
         sed -i "s/$MSG//ig" "$LOCALSETTINGS"
 
     fi
@@ -142,7 +142,7 @@ function set_constants {
     BACKUP_DATE=$(date +%Y-%m-%d)
     BACKUP_PREFIX=$BACKUP_DIR/$BACKUP_DATE
 
-    echo "Constants set"
+    echo "$(date +%T %Z): Constants set"
 }
 
 ################################################################################
@@ -150,7 +150,7 @@ function set_constants {
 ## Kudos to https://github.com/milkmiruku/backup-mediawiki
 function export_sql {
     SQLFILE=$BACKUP_PREFIX"-database.sql.gz"
-    echo "Dumping database to $SQLFILE"
+    echo "$(date +%T %Z): Dumping database to $SQLFILE"
     nice -n 19 mysqldump --single-transaction \
         --default-character-set=$CHARSET \
         --host=$DB_HOST \
@@ -162,7 +162,7 @@ function export_sql {
     MySQL_RET_CODE=$?
     if [ $MySQL_RET_CODE -ne 0 ]; then
         ERR_NUM=3
-        echo "MySQL Dump failed! (return code of MySQL: $MySQL_RET_CODE)" 1>&2
+        echo "$(date +%T %Z): MySQL Dump failed! (return code of MySQL: $MySQL_RET_CODE)" 1>&2
         exit $ERR_NUM
     fi
 }
@@ -172,7 +172,7 @@ function export_sql {
 ## Kudos to http://brightbyte.de/page/MediaWiki_backup
 function export_xml {
     XML_DUMP=$BACKUP_PREFIX"-pages.xml.gz"
-    echo "Exporting XML to $XML_DUMP"
+    echo "$(date +%T %Z): Exporting XML to $XML_DUMP"
     cd "$INSTALL_DIR/maintenance"
     php -d error_reporting=E_ERROR dumpBackup.php --quiet --full \
     | gzip -9 > "$XML_DUMP"
@@ -182,7 +182,7 @@ function export_xml {
 ## Export the images directory
 function export_images {
     IMG_BACKUP=$BACKUP_PREFIX"-images.tar.gz.tmp"
-    echo "Compressing images to $IMG_BACKUP"
+    echo "$(date +%T %Z): Compressing images to $IMG_BACKUP"
     cd "$INSTALL_DIR"
     tar --exclude-vcs -zcf "$IMG_BACKUP" images
 }
@@ -191,7 +191,7 @@ function export_images {
 ## Export the extensions directory
 function export_extensions {
     EXT_BACKUP=$BACKUP_PREFIX"-extensions.tar.gz"
-    echo "Compressing extensions to $EXT_BACKUP"
+    echo "$(date +%T %Z): Compressing extensions to $EXT_BACKUP"
     cd "$INSTALL_DIR"
     tar --exclude-vcs -zcf "$EXT_BACKUP" extensions
 }
@@ -200,7 +200,7 @@ function export_extensions {
 ## Export the settings
 function export_settings {
     SETTINGS_BACKUP=$BACKUP_PREFIX"-LocalSettings.tar.gz"
-    echo "Compressing settings files to $SETTINGS_BACKUP"
+    echo "$(date +%T %Z): Compressing settings files to $SETTINGS_BACKUP"
     cd "$INSTALL_DIR"
     tar --exclude-vcs -zcf "$SETTINGS_BACKUP" LocalSettings*
 }
@@ -209,7 +209,7 @@ function export_settings {
 ## Condense the backup files into a single file
 function condense_backup {
     BACKUP_FILE=$BACKUP_PREFIX"-Backup.tar.gz"
-    echo "Condensing all backup files (other than images) to $BACKUP_FILE"
+    echo "$(date +%T %Z): Condensing all backup files (other than images) to $BACKUP_FILE"
     cd "$BACKUP_DIR"
     tar --exclude-vcs -zcf "$BACKUP_FILE" *.gz
 }
@@ -218,7 +218,7 @@ function condense_backup {
 ## Store backup files
 ## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
 function store_backup {
-    echo "Copying backup to daily_backups folder"
+    echo "$(date +%T %Z): Copying backup to daily_backups folder"
     cd "$BACKUP_DIR"
     
     # Daily backup
@@ -242,7 +242,7 @@ function store_backup {
 ## Rotating backup files
 ## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
 function rotate_backups {
-    echo "Deleting temporary and old backups"
+    echo "$(date %T %Z): Deleting temporary and old backups"
     cd "$BACKUP_DIR"
     
     # Delete daily backups older than seven days
@@ -266,6 +266,7 @@ function rotate_backups {
 ## Main
 
 # Preparation
+echo "$(date +%T %Z): Starting backup for $(date +%D)"
 get_options $@
 get_localsettings_vars
 set_constants
@@ -283,6 +284,7 @@ toggle_read_only
 condense_backup
 store_backup
 rotate_backups
+echo "$(date +%T %Z): Completed backup"
 
 ## End main
 ################################################################################
