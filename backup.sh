@@ -181,7 +181,7 @@ function export_xml {
 ################################################################################
 ## Export the images directory
 function export_images {
-    IMG_BACKUP=$BACKUP_PREFIX"-images.tar.gz"
+    IMG_BACKUP=$BACKUP_PREFIX"-images.tar.gz.tmp"
     echo "Compressing images to $IMG_BACKUP"
     cd "$INSTALL_DIR"
     tar --exclude-vcs -zcf "$IMG_BACKUP" images
@@ -209,7 +209,7 @@ function export_settings {
 ## Condense the backup files into a single file
 function condense_backup {
     BACKUP_FILE=$BACKUP_PREFIX"-Backup.tar.gz"
-    echo "Condensing all backup files to $BACKUP_FILE"
+    echo "Condensing all backup files (other than images) to $BACKUP_FILE"
     cd "$BACKUP_DIR"
     tar --exclude-vcs -zcf "$BACKUP_FILE" *.gz
 }
@@ -219,18 +219,22 @@ function condense_backup {
 ## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
 function store_backup {
     echo "Copying backup to daily_backups folder"
+    cd "$BACKUP_DIR"
     
     # Daily backup
     cp $BACKUP_FILE $DAILY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+    cp $BACKUP_PREFIX"-images.tar.gz.tmp" $DAILY_BACKUP_DIR/$BACKUP_DATE"-images.tar.gz"
     
     # Weekly backup (Sunday)
     if [[$(date +%w) -eq 0 ]]; then # today's day of the week is 0 = Sunday
         cp $BACKUP_FILE $WEEKLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+        cp $BACKUP_PREFIX"-images.tar.gz.tmp" $WEEKLY_BACKUP_DIR/$BACKUP_DATE"-images.tar.gz"
     fi
     
     # Monthly backup (EOM)
     if [[$(date +%d) -gt $(date +%d -d "1 day") ]]; then # today's date is greater than tomorrow's date
         cp $BACKUP_FILE $MONTHLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
+        cp $BACKUP_PREFIX"-images.tar.gz.tmp" $MONTHLY_BACKUP_DIR/$BACKUP_DATE"-images.tar.gz"
     fi
 }
 
@@ -239,18 +243,23 @@ function store_backup {
 ## Kudos to https://github.com/nischayn22/mw_backup/blob/master/backup.php
 function rotate_backups {
     echo "Deleting temporary and old backups"
+    cd "$BACKUP_DIR"
     
     # Delete daily backups older than seven days
     find $DAILY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +7 -delete
+    find $DAILY_BACKUP_DIR/*images.tar.gz -maxdepth 1 -type f -mtime +1 -delete
     
     # Delete weekly backups older than 32 days (1 month)
     find $WEEKLY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +32 -delete
+    find $WEEKLY_BACKUP_DIR/*images.tar.gz -maxdepth 1 -type f -mtime +7 -delete
     
     # Delete monthly backups older than 92 days (3 months)
     find $MONTHLY_BACKUP_DIR/*.gz -maxdepth 1 -type f -mtime +92 -delete
+    find $MONTHLY_BACKUP_DIR/*images.tar.gz -maxdepth 1 -type f -mtime +31 -delete
     
     # Delete all files in the root backup folder
     find $BACKUP_DIR/*.gz -maxdepth 1 -type f -delete
+    find $BACKUP_DIR/*.tmp -maxdepth 1 -type f -delete
 }
 
 ################################################################################
