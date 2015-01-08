@@ -226,13 +226,13 @@ function store_backup {
     cp $BACKUP_PREFIX"-images.tar.gz.tmp" $DAILY_BACKUP_DIR/$BACKUP_DATE"-images.tar.gz"
     
     # Weekly backup (Sunday)
-    if [[$(date +%w) -eq 0 ]]; then # today's day of the week is 0 = Sunday
+    if [$(date +%w) -eq 0 ]; then # today's day of the week is 0 = Sunday
         cp $BACKUP_FILE $WEEKLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
         cp $BACKUP_PREFIX"-images.tar.gz.tmp" $WEEKLY_BACKUP_DIR/$BACKUP_DATE"-images.tar.gz"
     fi
     
     # Monthly backup (EOM)
-    if [[$(date +%d) -gt $(date +%d -d "1 day") ]]; then # today's date is greater than tomorrow's date
+    if [$(date +%d) -gt $(date +%d -d "1 day") ]; then # today's date is greater than tomorrow's date
         cp $BACKUP_FILE $MONTHLY_BACKUP_DIR/$BACKUP_DATE"-Backup.tar.gz"
         cp $BACKUP_PREFIX"-images.tar.gz.tmp" $MONTHLY_BACKUP_DIR/$BACKUP_DATE"-images.tar.gz"
     fi
