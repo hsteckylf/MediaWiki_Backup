@@ -13,19 +13,27 @@
 ## Output command usage
 function usage {
     local NAME=$(basename $0)
-    echo "Usage: $NAME -d backup/dir -w installation/dir"
+    echo "Usage: $NAME [-t] -d backup/dir -w installation/dir"
 }
 
 ################################################################################
 ## Get and validate CLI options
 function get_options {
-    while getopts 'd:w:' OPT; do
+    while getopts 'd:w:t' OPT; do
         case $OPT in
             d) BACKUP_DIR=$OPTARG;;
             w) INSTALL_DIR=$OPTARG;;
+            t) 
+                #disable read-only mode
+                echo "$(date --rfc-3339=seconds): Automatically disable read-only mode" 1>&2
+                READONLY=true
+                toggle_read_only
+                exit(1)
+            ;;
+                
         esac
     done
-
+    
     ## Check WIKI_WEB_DIR
     if [ -z $INSTALL_DIR ]; then
         echo "$(date --rfc-3339=seconds): Please specify the wiki directory with -w" 1>&2
@@ -113,9 +121,10 @@ function toggle_read_only {
 
     # If already read-only
     grep "$MSG" "$LOCALSETTINGS" > /dev/null
-    if [ $? -ne 0 ]; then
+    if [ $? -ne 0 ] && !$READONLY; then
 
         echo "$(date --rfc-3339=seconds): Entering read-only mode"
+        READONLY=true
         grep "?>" "$LOCALSETTINGS" > /dev/null
         if [ $? -eq 0 ];
         then
@@ -128,6 +137,7 @@ function toggle_read_only {
     else
 
         echo "$(date --rfc-3339=seconds): Returning to write mode"
+        READONLY=false
         sed -i "s/$MSG//ig" "$LOCALSETTINGS"
 
     fi
@@ -136,6 +146,7 @@ function toggle_read_only {
 ################################################################################
 ## Set program constants
 function set_constants {
+    READONLY=false
     DAILY_BACKUP_DIR=$BACKUP_DIR"/daily_backups"
     WEEKLY_BACKUP_DIR=$BACKUP_DIR"/weekly_backups"
     MONTHLY_BACKUP_DIR=$BACKUP_DIR"/monthly_backups"
